@@ -14,8 +14,8 @@
 - 動作確認: 主要UIが表示され、スマホ/PCで崩れない
 
 ## STEP 2: 画像選択とCanvas描画
-- [ ] `ImageUploader`で`FileHandlerService.validateFile/loadImage`を呼び出す
-- [ ] `useCanvas`でCanvas描画、4K超過のリサイズと検証を実装
+- [x] `ImageUploader`で`FileHandlerService.validateFile/loadImage`を呼び出す
+- [x] `useCanvas`でCanvas描画、4K超過のリサイズと検証を実装
 - 動作確認: 対応形式の画像を選択するとCanvasに表示される
 - 動作確認: 不正形式や10MB超過でトースト通知が出る
 

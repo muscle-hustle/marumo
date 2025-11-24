@@ -1,11 +1,11 @@
-import type { FC } from 'react'
-import { useRef } from 'react'
+import type { FC, MutableRefObject } from 'react'
 
 export type CanvasStatus = 'idle' | 'loading' | 'ready'
 
 export interface ImageCanvasProps {
   status?: CanvasStatus
   caption?: string
+  canvasRef: MutableRefObject<HTMLCanvasElement | null>
 }
 
 const statusMessage: Record<CanvasStatus, string> = {
@@ -14,18 +14,17 @@ const statusMessage: Record<CanvasStatus, string> = {
   ready: 'プレビュー準備完了',
 }
 
-const ImageCanvas: FC<ImageCanvasProps> = ({ status = 'idle', caption }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-
+const ImageCanvas: FC<ImageCanvasProps> = ({ status = 'idle', caption, canvasRef }) => {
+  const showOverlay = status !== 'ready'
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/30">
       <canvas ref={canvasRef} className="h-80 w-full bg-black/40" />
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
-        <p className="text-sm font-medium text-white/85">{caption ?? statusMessage[status]}</p>
-        {status !== 'ready' && (
-          <p className="text-xs text-white/60">STEP2でCanvas連携が有効になります</p>
-        )}
-      </div>
+      {showOverlay && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+          <p className="text-sm font-medium text-white/85">{caption ?? statusMessage[status]}</p>
+          <p className="text-xs text-white/60">PNG / JPEG / WebP の画像を読み込みできます</p>
+        </div>
+      )}
     </div>
   )
 }
