@@ -107,13 +107,12 @@ const App: FC = () => {
             <ImageCanvas
               status={canvasStatus}
               caption={
-                canvasStatus === 'ready' && imageInfo
-                  ? `${imageInfo.width}×${imageInfo.height}px`
-                  : selectedFileName
-                    ? `${selectedFileName} を読み込み中`
-                    : undefined
+                canvasStatus !== 'ready' && selectedFileName
+                  ? `${selectedFileName} を読み込み中`
+                  : undefined
               }
               canvasRef={canvasRef}
+              dimensions={imageInfo}
             />
           </div>
         </section>
