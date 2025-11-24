@@ -53,8 +53,8 @@ const ImageUploader: FC<ImageUploaderProps> = ({
   const labelStateClasses = errorMessage
     ? 'border-red-400/70 hover:border-red-300/80'
     : isDragging
-    ? 'border-primary-200 bg-white/10'
-    : 'border-white/15 hover:border-primary-300/80 hover:bg-black/30'
+      ? 'border-primary-200 bg-white/10'
+      : 'border-white/15 hover:border-primary-300/80 hover:bg-black/30'
 
   return (
     <div
