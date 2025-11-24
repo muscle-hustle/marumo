@@ -1,16 +1,16 @@
 # marumo 実装計画
 
 ## STEP 0: セットアップと共通基盤
-- [ ] `bun install`で依存関係導入、`bun run dev`で起動確認
-- [ ] Tailwind CSS設定（`tailwind.config.js` / `postcss.config.js` / `src/index.css`）
-- [ ] 型定義（`src/types/index.ts`）とユーティリティ雛形整備
-- [ ] 簡易レイアウトと共通スタイルの適用
+- [x] `bun install`で依存関係導入、`bun run dev`で起動確認
+- [x] Tailwind CSS設定（`tailwind.config.js` / `postcss.config.js` / `src/index.css`）
+- [x] 型定義（`src/types/index.ts`）とユーティリティ雛形整備
+- [x] 簡易レイアウトと共通スタイルの適用
 - 動作確認: 画面が表示され、スタイルが反映される
 
 ## STEP 1: 画面骨格・UIコンポーネント
-- [ ] `App.tsx`にヘッダー・画像選択エリア・プレビュー・操作パネルを配置
-- [ ] `ImageUploader`/`ImageCanvas`/`ProcessingOptions`などのレイアウトを作成
-- [ ] Tailwindでレスポンシブレイアウトを整備
+- [x] `App.tsx`にヘッダー・画像選択エリア・プレビュー・操作パネルを配置
+- [x] `ImageUploader`/`ImageCanvas`/`ProcessingOptions`などのレイアウトを作成
+- [x] Tailwindでレスポンシブレイアウトを整備
 - 動作確認: 主要UIが表示され、スマホ/PCで崩れない
 
 ## STEP 2: 画像選択とCanvas描画
