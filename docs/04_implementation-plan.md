@@ -20,8 +20,8 @@
 - 動作確認: 不正形式や10MB超過でトースト通知が出る
 
 ## STEP 3: 自動顔検出
-- [ ] `useFaceDetection`と`FaceDetectionService`を実装（MediaPipe初期化、信頼度0.7フィルタ）
-- [ ] 自動モードUIから検出を実行し、Canvas上でハイライト表示
+- [x] `useFaceDetection`と`FaceDetectionService`を実装（MediaPipe初期化、信頼度0.7フィルタ）
+- [x] 自動モードUIから検出を実行し、Canvas上でハイライト表示
 - 動作確認: 顔がハイライトされる、検出エラー時にトースト通知
 
 ## STEP 4: 手動モード（投げ縄選択）

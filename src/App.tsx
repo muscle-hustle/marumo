@@ -1,4 +1,4 @@
-import { useCallback, useState, type FC } from 'react'
+import { useCallback, useState, useEffect, type FC } from 'react'
 import ImageUploader from './components/ImageUploader'
 import ImageCanvas, { type CanvasStatus } from './components/ImageCanvas'
 import FaceDetectionControls from './components/FaceDetectionControls'
@@ -6,6 +6,7 @@ import ProcessingOptions from './components/ProcessingOptions'
 import LassoSelector from './components/LassoSelector'
 import DownloadButton from './components/DownloadButton'
 import { useCanvas } from './hooks/useCanvas'
+import { useFaceDetection } from './hooks/useFaceDetection'
 import { loadImageFromFile, validateImageFile } from './services/fileHandler'
 import type {
   DetectionMode,
@@ -42,7 +43,9 @@ const App: FC = () => {
   const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>('idle')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [imageInfo, setImageInfo] = useState<{ width: number; height: number } | null>(null)
-  const { canvasRef, drawImage, clear } = useCanvas()
+  const [currentImage, setCurrentImage] = useState<HTMLImageElement | null>(null)
+  const { canvasRef, drawImage, clear, drawFaceHighlights } = useCanvas()
+  const { faces, isDetecting, error: faceDetectionError, detectFaces, clearFaces } = useFaceDetection()
 
   const handleFileSelect = useCallback(
     async (file: File) => {
@@ -65,16 +68,44 @@ const App: FC = () => {
         if (size) {
           setImageInfo(size)
         }
+        setCurrentImage(image)
         setCanvasStatus('ready')
+        clearFaces()
       } catch (error) {
         console.error(error)
         setValidationError('LOAD_ERROR')
         setCanvasStatus('idle')
         clear()
+        setCurrentImage(null)
       }
     },
-    [clear, drawImage],
+    [clear, drawImage, clearFaces],
   )
+
+  // 自動モードで画像が読み込まれたら検出を実行
+  useEffect(() => {
+    if (detectionMode === 'auto' && currentImage && canvasStatus === 'ready' && !isDetecting) {
+      detectFaces(currentImage)
+    }
+  }, [detectionMode, currentImage, canvasStatus, isDetecting, detectFaces])
+
+  // 検出結果をCanvasに描画
+  useEffect(() => {
+    if (faces.length > 0 && currentImage) {
+      drawFaceHighlights(faces)
+    } else if (faces.length === 0 && currentImage && canvasStatus === 'ready') {
+      // 検出結果がない場合は画像のみ再描画
+      drawImage(currentImage)
+    }
+  }, [faces, currentImage, canvasStatus, drawFaceHighlights, drawImage])
+
+  // 検出エラーを表示
+  useEffect(() => {
+    if (faceDetectionError) {
+      console.error('顔検出エラー:', faceDetectionError)
+      // TODO: STEP7でトースト通知に置き換え
+    }
+  }, [faceDetectionError])
 
   return (
     <div className="bg-surface-dark text-white min-h-screen">
@@ -123,6 +154,8 @@ const App: FC = () => {
             <FaceDetectionControls
               detectionMode={detectionMode}
               manualMode={manualMode}
+              isDetecting={isDetecting}
+              faceCount={faces.length}
               onDetectionModeChange={setDetectionMode}
               onManualModeChange={setManualMode}
             />

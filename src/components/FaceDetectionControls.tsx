@@ -4,6 +4,8 @@ import type { DetectionMode, ManualModeType } from '../types'
 export interface FaceDetectionControlsProps {
   detectionMode: DetectionMode
   manualMode: ManualModeType
+  isDetecting?: boolean
+  faceCount?: number
   onDetectionModeChange: (mode: DetectionMode) => void
   onManualModeChange: (mode: ManualModeType) => void
   onDetect?: () => void
@@ -12,9 +14,10 @@ export interface FaceDetectionControlsProps {
 const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
   detectionMode,
   manualMode,
+  isDetecting = false,
+  faceCount = 0,
   onDetectionModeChange,
   onManualModeChange,
-  onDetect,
 }) => {
   const detectionButtons: Array<{ value: DetectionMode; label: string }> = [
     { value: 'auto', label: '自動モード' },
@@ -35,11 +38,10 @@ const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
             <button
               key={button.value}
               type="button"
-              className={`rounded-full px-4 py-2 text-sm transition ${
-                detectionMode === button.value
+              className={`rounded-full px-4 py-2 text-sm transition ${detectionMode === button.value
                   ? 'bg-primary-500 text-white'
                   : 'bg-white/5 text-white/70 hover:bg-white/10'
-              }`}
+                }`}
               aria-pressed={detectionMode === button.value}
               onClick={() => onDetectionModeChange(button.value)}
             >
@@ -57,11 +59,10 @@ const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
               <button
                 key={button.value}
                 type="button"
-                className={`rounded-full px-4 py-2 text-sm transition ${
-                  manualMode === button.value
+                className={`rounded-full px-4 py-2 text-sm transition ${manualMode === button.value
                     ? 'bg-primary-300/20 text-white'
                     : 'bg-white/5 text-white/70 hover:bg-white/10'
-                }`}
+                  }`}
                 aria-pressed={manualMode === button.value}
                 onClick={() => onManualModeChange(button.value)}
               >
@@ -72,19 +73,17 @@ const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
         </div>
       )}
 
-      <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/75">
-        <p>
-          顔検出エンジンの実装はSTEP3で追加予定です。それまではUIのみで動作確認できます。
-        </p>
-        <button
-          type="button"
-          className="w-full rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white/70"
-          disabled
-          onClick={onDetect}
-        >
-          顔を検出（準備中）
-        </button>
-      </div>
+      {detectionMode === 'auto' && (
+        <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/75">
+          {isDetecting ? (
+            <p className="text-center">顔を検出中...</p>
+          ) : faceCount > 0 ? (
+            <p className="text-center">{faceCount}個の顔を検出しました</p>
+          ) : (
+            <p className="text-center">画像を選択すると自動で顔を検出します</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
