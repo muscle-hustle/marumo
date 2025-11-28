@@ -5,6 +5,15 @@ import type { FaceDetectionResult } from '../types'
 const MAX_CANVAS_WIDTH = 1920
 const MAX_CANVAS_HEIGHT = 1080
 
+/**
+ * 開発モードかどうかを判定する
+ * 開発モードの時だけ信頼度を表示する
+ */
+const isDevelopmentMode = (): boolean => {
+  // @ts-expect-error - Viteの環境変数（型定義は vite/client で提供される）
+  return import.meta.env.DEV
+}
+
 export const useCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
@@ -56,14 +65,27 @@ export const useCanvas = () => {
       ctx.fillRect(x, y, width, height)
       ctx.strokeRect(x, y, width, height)
 
-      // 信頼度を表示
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '12px sans-serif'
-      ctx.fillText(
-        `${Math.round(face.confidence * 100)}%`,
-        x + 5,
-        y + 15,
-      )
+      // 開発モードの時だけ信頼度を表示
+      if (isDevelopmentMode()) {
+        const confidenceText = `${(face.confidence * 100).toFixed(1)}%`
+        ctx.font = 'bold 36px sans-serif'
+        const textMetrics = ctx.measureText(confidenceText)
+        const textWidth = textMetrics.width
+        const textHeight = 40
+        const padding = 20
+        const boxX = x + 10
+        const boxY = y + 10
+
+        // 背景ボックスを描画（半透明の青）
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.5)'
+        ctx.fillRect(boxX, boxY, textWidth + padding * 2, textHeight + padding * 2)
+
+        // テキストを描画
+        ctx.fillStyle = '#ffffff'
+        ctx.fillText(confidenceText, boxX + padding, boxY + padding + 40)
+      }
+
+      // fillStyleを元に戻す
       ctx.fillStyle = 'rgba(59, 130, 246, 0.1)'
     })
   }, [])

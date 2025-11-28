@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, type FC } from 'react'
+import { useCallback, useState, useEffect, useRef, type FC } from 'react'
 import ImageUploader from './components/ImageUploader'
 import ImageCanvas, { type CanvasStatus } from './components/ImageCanvas'
 import FaceDetectionControls from './components/FaceDetectionControls'
@@ -46,6 +46,8 @@ const App: FC = () => {
   const [currentImage, setCurrentImage] = useState<HTMLImageElement | null>(null)
   const { canvasRef, drawImage, clear, drawFaceHighlights } = useCanvas()
   const { faces, isDetecting, error: faceDetectionError, detectFaces, clearFaces } = useFaceDetection()
+  // 検出済みの画像を追跡して重複検出を防ぐ
+  const detectedImageRef = useRef<HTMLImageElement | null>(null)
 
   const handleFileSelect = useCallback(
     async (file: File) => {
@@ -71,6 +73,8 @@ const App: FC = () => {
         setCurrentImage(image)
         setCanvasStatus('ready')
         clearFaces()
+        // 新しい画像が読み込まれたので検出済みフラグをリセット
+        detectedImageRef.current = null
       } catch (error) {
         console.error(error)
         setValidationError('LOAD_ERROR')
@@ -82,9 +86,24 @@ const App: FC = () => {
     [clear, drawImage, clearFaces],
   )
 
+  // 検出モードが変更されたら検出済みフラグをリセット
+  useEffect(() => {
+    if (detectionMode === 'auto') {
+      detectedImageRef.current = null
+    }
+  }, [detectionMode])
+
   // 自動モードで画像が読み込まれたら検出を実行
   useEffect(() => {
-    if (detectionMode === 'auto' && currentImage && canvasStatus === 'ready' && !isDetecting) {
+    if (
+      detectionMode === 'auto' &&
+      currentImage &&
+      canvasStatus === 'ready' &&
+      !isDetecting &&
+      detectedImageRef.current !== currentImage
+    ) {
+      console.log('[App] 顔検出を開始します')
+      detectedImageRef.current = currentImage
       detectFaces(currentImage)
     }
   }, [detectionMode, currentImage, canvasStatus, isDetecting, detectFaces])

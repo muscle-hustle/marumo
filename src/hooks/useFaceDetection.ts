@@ -20,15 +20,20 @@ export function useFaceDetection(): UseFaceDetectionReturn {
     const [error, setError] = useState<string | null>(null)
 
     const detectFaces = useCallback(async (image: HTMLImageElement) => {
+        const startTime = performance.now()
         setIsDetecting(true)
         setError(null)
         setFaces([])
 
         try {
             const detectedFaces = await faceDetectionService.detectFaces(image)
+            const elapsedTime = performance.now() - startTime
+            console.log(`[useFaceDetection] 全体処理時間: ${elapsedTime.toFixed(2)}ms`)
             setFaces(detectedFaces)
         } catch (err) {
+            const elapsedTime = performance.now() - startTime
             const errorMessage = err instanceof Error ? err.message : '顔検出に失敗しました'
+            console.error(`[useFaceDetection] エラー: ${elapsedTime.toFixed(2)}ms 経過`, err)
             setError(errorMessage)
             setFaces([])
         } finally {
@@ -38,15 +43,21 @@ export function useFaceDetection(): UseFaceDetectionReturn {
 
     const detectFacesInRegion = useCallback(
         async (image: HTMLImageElement, region: Path2D) => {
+            const startTime = performance.now()
+            console.log('[useFaceDetection] 領域内検出開始')
             setIsDetecting(true)
             setError(null)
             setFaces([])
 
             try {
                 const detectedFaces = await faceDetectionService.detectFacesInRegion(image, region)
+                const elapsedTime = performance.now() - startTime
+                console.log(`[useFaceDetection] 領域内検出完了: ${elapsedTime.toFixed(2)}ms`)
                 setFaces(detectedFaces)
             } catch (err) {
+                const elapsedTime = performance.now() - startTime
                 const errorMessage = err instanceof Error ? err.message : '顔検出に失敗しました'
+                console.error(`[useFaceDetection] 領域内検出エラー: ${elapsedTime.toFixed(2)}ms 経過`, err)
                 setError(errorMessage)
                 setFaces([])
             } finally {

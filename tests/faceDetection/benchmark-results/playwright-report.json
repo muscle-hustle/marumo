@@ -1,0 +1,397 @@
+{
+  "config": {
+    "configFile": "/Users/sei/Sites/marumo/playwright.config.ts",
+    "rootDir": "/Users/sei/Sites/marumo/tests/faceDetection/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "tests/faceDetection/benchmark-results/playwright-report.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/sei/Sites/marumo/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/sei/Sites/marumo/tests/faceDetection/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 1,
+    "webServer": {
+      "command": "bun run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "faceDetection.benchmark.spec.ts",
+      "file": "faceDetection.benchmark.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "顔検出精度ベンチマーク",
+          "file": "faceDetection.benchmark.spec.ts",
+          "line": 50,
+          "column": 6,
+          "specs": [
+            {
+              "title": "全画像で検出精度を測定",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 600000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 45969,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "テスト対象の画像ファイル: 15個\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1-3.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜3人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (3人, 7ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (1人, 6ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_10.png\n"
+                        },
+                        {
+                          "text": "  期待値: 10〜10人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_13-19.png\n"
+                        },
+                        {
+                          "text": "  期待値: 13〜19人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_0.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_cafe.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_hige.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (1人, 5ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_kid.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_man.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_megane.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_mt.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (1人, 7ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_1_woman.png\n"
+                        },
+                        {
+                          "text": "  期待値: 1〜1人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (1人, 5ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_5.png\n"
+                        },
+                        {
+                          "text": "  期待値: 5〜5人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (5人, 6ms)\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_5_mtg.png\n"
+                        },
+                        {
+                          "text": "  期待値: 5〜5人\n"
+                        },
+                        {
+                          "text": "\n[テスト開始] faces_6.png\n"
+                        },
+                        {
+                          "text": "  期待値: 6〜6人\n"
+                        },
+                        {
+                          "text": "  ✅ 検出数が期待範囲内です (6人, 5ms)\n"
+                        },
+                        {
+                          "text": "\n=== テスト結果サマリー ===\n"
+                        },
+                        {
+                          "text": "総テスト数: 15\n"
+                        },
+                        {
+                          "text": "成功: 7\n"
+                        },
+                        {
+                          "text": "失敗: 8\n"
+                        },
+                        {
+                          "text": "成功率: 46.7%\n"
+                        },
+                        {
+                          "text": "\n結果を保存しました:\n"
+                        },
+                        {
+                          "text": "  - /Users/sei/Sites/marumo/tests/faceDetection/benchmark-results/benchmark-2025-11-28T01-35-26.json\n"
+                        },
+                        {
+                          "text": "  - /Users/sei/Sites/marumo/tests/faceDetection/benchmark-results/latest.json\n"
+                        },
+                        {
+                          "text": "\n詳細結果:\n"
+                        },
+                        {
+                          "text": "  ✅ faces_1-3.png: 期待 1〜3人, 実際 3人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_1.png: 期待 1〜1人, 実際 1人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_10.png: 期待 10〜10人, 実際 3人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_13-19.png: 期待 13〜19人, 実際 1人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_1_0.png: 期待 1〜1人, 実際 5人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_1_cafe.png: 期待 1〜1人, 実際 4人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_1_hige.png: 期待 1〜1人, 実際 1人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_1_kid.png: 期待 1〜1人, 実際 3人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_1_man.png: 期待 1〜1人, 実際 2人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_1_megane.png: 期待 1〜1人, 実際 2人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_1_mt.png: 期待 1〜1人, 実際 1人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_1_woman.png: 期待 1〜1人, 実際 1人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_5.png: 期待 5〜5人, 実際 5人\n"
+                        },
+                        {
+                          "text": "  ❌ faces_5_mtg.png: 期待 5〜5人, 実際 4人\n"
+                        },
+                        {
+                          "text": "  ✅ faces_6.png: 期待 6〜6人, 実際 6人\n"
+                        }
+                      ],
+                      "stderr": [
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 10〜10人\n"
+                        },
+                        {
+                          "text": "     実際: 3人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 13〜19人\n"
+                        },
+                        {
+                          "text": "     実際: 1人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 1〜1人\n"
+                        },
+                        {
+                          "text": "     実際: 5人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 1〜1人\n"
+                        },
+                        {
+                          "text": "     実際: 4人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 1〜1人\n"
+                        },
+                        {
+                          "text": "     実際: 3人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 1〜1人\n"
+                        },
+                        {
+                          "text": "     実際: 2人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 1〜1人\n"
+                        },
+                        {
+                          "text": "     実際: 2人\n"
+                        },
+                        {
+                          "text": "  ❌ 検出数が期待範囲外です\n"
+                        },
+                        {
+                          "text": "     期待: 5〜5人\n"
+                        },
+                        {
+                          "text": "     実際: 4人\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-11-28T01:34:41.000Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/sei/Sites/marumo/test-results/faceDetection.benchmark-顔検出精度ベンチマーク-全画像で検出精度を測定-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "697a2b79d0b7ce9749d2-9aaa01bdffbccf49a185",
+              "file": "faceDetection.benchmark.spec.ts",
+              "line": 61,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-28T01:34:40.272Z",
+    "duration": 47485.948000000004,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
