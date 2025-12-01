@@ -34,6 +34,19 @@ export const useCanvas = () => {
     imageRef.current = null
   }, [])
 
+  // 画像を再描画（顔ハイライトや投げ縄選択の描画前に呼び出す）
+  const redrawImage = useCallback(() => {
+    const canvas = canvasRef.current
+    const image = imageRef.current
+    if (!canvas || !image) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+  }, [])
+
   const drawFaceHighlights = useCallback((faces: FaceDetectionResult[]) => {
     const canvas = canvasRef.current
     const image = imageRef.current
@@ -47,8 +60,7 @@ export const useCanvas = () => {
     const scaleY = canvas.height / image.height
 
     // 既存の描画をクリアして画像を再描画
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+    redrawImage()
 
     // 顔領域をハイライト
     ctx.strokeStyle = '#3b82f6' // 青色
@@ -88,12 +100,13 @@ export const useCanvas = () => {
       // fillStyleを元に戻す
       ctx.fillStyle = 'rgba(59, 130, 246, 0.1)'
     })
-  }, [])
+  }, [redrawImage])
 
   return {
     canvasRef,
     drawImage,
     clear,
     drawFaceHighlights,
+    redrawImage,
   }
 }

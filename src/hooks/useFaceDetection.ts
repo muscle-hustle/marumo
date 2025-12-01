@@ -8,6 +8,7 @@ export interface UseFaceDetectionReturn {
     error: string | null
     detectFaces: (image: HTMLImageElement) => Promise<void>
     detectFacesInRegion: (image: HTMLImageElement, region: Path2D) => Promise<void>
+    setFaces: (faces: FaceDetectionResult[]) => void
     clearFaces: () => void
 }
 
@@ -67,6 +68,11 @@ export function useFaceDetection(): UseFaceDetectionReturn {
         [],
     )
 
+    const setFacesDirectly = useCallback((newFaces: FaceDetectionResult[]) => {
+        setFaces(newFaces)
+        setError(null)
+    }, [])
+
     const clearFaces = useCallback(() => {
         setFaces([])
         setError(null)
@@ -78,6 +84,7 @@ export function useFaceDetection(): UseFaceDetectionReturn {
         error,
         detectFaces,
         detectFacesInRegion,
+        setFaces: setFacesDirectly,
         clearFaces,
     }
 }
