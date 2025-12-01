@@ -9,6 +9,26 @@
 - Cloudflareアカウント
 - GitHubリポジトリ（またはGitLab/Bitbucket）
 
+### デプロイ前のローカル確認
+
+デプロイ前に、以下の手順でローカルで本番環境に近い状態を確認できます：
+
+#### 1. ビルドの確認
+
+```bash
+bun run build
+```
+
+ビルドが成功し、`dist/`ディレクトリにファイルが生成されることを確認します。
+
+#### 2. プレビューサーバーの起動
+
+```bash
+bun run preview
+```
+
+これにより、ビルド後のファイルを本番環境に近い状態で確認できます。
+
 ### デプロイ手順
 
 #### 1. Cloudflare Pagesでプロジェクトを作成
@@ -55,6 +75,7 @@ bun run build
 ビルド結果は `dist/` ディレクトリに出力されます：
 - `dist/index.html` - エントリーポイント
 - `dist/assets/` - バンドルされたJS/CSSファイルとその他のアセット
+- `dist/_redirects` - SPAルーティング用のリダイレクト設定
 
 #### SPAルーティング
 
@@ -83,6 +104,15 @@ bun run build
 - ビルド後の `dist/` ディレクトリにアセットが正しくコピーされているか確認
 - Viteの設定で `base` パスが正しく設定されているか確認
 
+#### 顔検出が動作しない
+
+- ブラウザのコンソールでエラーログを確認
+- `public/mediapipe/face_detection/face_detection.js`が`dist/mediapipe/face_detection/`に正しくコピーされているか確認
+- MediaPipeの初期化エラーがないか確認
+- `window.FaceDetection`がグローバルに定義されているか確認（コンソールで`window.FaceDetection`を実行）
+
+**注意**: MediaPipeは`public`フォルダに配置して`<script>`タグで読み込む方式を使用しています。詳細は`docs/06_mediapipe-integration.md`を参照してください。
+
 ### 継続的デプロイメント
 
 - **自動デプロイ**: `main` ブランチへのプッシュで自動デプロイ
@@ -96,4 +126,3 @@ Cloudflare Pagesは自動的に以下を提供します：
 - 自動的なHTTPS
 - 画像最適化（Cloudflare Imagesを使用する場合）
 - キャッシング最適化
-

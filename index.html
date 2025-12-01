@@ -10,6 +10,19 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
         rel="stylesheet" />
+    <!-- MediaPipe Face Detectionをpublicフォルダから読み込む -->
+    <script src="/mediapipe/face_detection/face_detection.js"></script>
+    <script>
+        // MediaPipeはグローバルスコープにFaceDetectionを登録する
+        // 読み込み完了を待つ
+        (function checkFaceDetection() {
+            if (typeof window.FaceDetection !== 'undefined') {
+                // 読み込み成功（デバッグログは削除）
+            } else {
+                setTimeout(checkFaceDetection, 100);
+            }
+        })();
+    </script>
     <title>marumo | 画像モザイク加工アプリ</title>
 </head>
 

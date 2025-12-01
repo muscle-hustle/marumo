@@ -2,6 +2,8 @@
 
 **marumo**（まるも）は、サーバーに写真を送信せず、クライアント側で安全にモザイク加工できる画像加工アプリケーションです。
 
+**本番環境**: https://marumo-cgh.pages.dev/
+
 ## アプリ名の由来
 
 「**まる**」で囲むだけで簡単に「**モ**」ザイクをかける、というコンセプトから名付けられました。手軽に顔を保護できるツールです。
@@ -63,6 +65,7 @@ bun run preview
 - [ユーザーガイド](./docs/03_user-guide.md)
 - [実装計画](./docs/04_implementation-plan.md)
 - [デプロイメントガイド](./docs/05_deployment.md)
+- [MediaPipe統合方法の解説](./docs/06_mediapipe-integration.md)
 
 ## ライセンス
 

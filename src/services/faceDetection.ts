@@ -1,6 +1,13 @@
-import { FaceDetection } from '@mediapipe/face_detection'
 import type { FaceDetectionResult } from '../types'
 import type { ExtendedDetection } from '../types/mediapipe'
+
+// MediaPipeをグローバルから取得する関数
+function getFaceDetection(): any {
+    if (typeof window !== 'undefined' && (window as any).FaceDetection) {
+        return (window as any).FaceDetection
+    }
+    throw new Error('FaceDetectionがグローバルに定義されていません')
+}
 
 // 信頼度閾値（過剰検出を抑制）
 // 複数人の写真や横顔では各顔の信頼度が低くなる可能性があるため、かなり低めに設定
@@ -29,7 +36,7 @@ const TIMEOUT_MS = 10000
 
 
 class FaceDetectionService {
-    private faceDetection: FaceDetection | null = null
+    private faceDetection: any = null
     private isInitialized = false
     private initPromise: Promise<void> | null = null
     private isDetecting = false // 検出中のフラグ
@@ -54,8 +61,77 @@ class FaceDetectionService {
 
     private async _initialize(): Promise<void> {
         try {
-            this.faceDetection = new FaceDetection({
-                locateFile: (file) => {
+            // FaceDetectionがグローバルに読み込まれるまで待つ
+            let FaceDetectionConstructor = null
+            let retries = 0
+            const maxRetries = 50 // 5秒待つ
+
+            while (!FaceDetectionConstructor && retries < maxRetries) {
+                try {
+                    FaceDetectionConstructor = getFaceDetection()
+                } catch (e) {
+                    // まだ読み込まれていない
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                }
+                retries++
+            }
+
+            if (!FaceDetectionConstructor) {
+                throw new Error('FaceDetectionの読み込みがタイムアウトしました')
+            }
+
+            console.log('[顔検出] グローバルFaceDetectionを取得しました:', typeof FaceDetectionConstructor, FaceDetectionConstructor)
+
+            // フォールバック: モジュール全体が設定されている場合
+            if (typeof FaceDetectionConstructor === 'object' && FaceDetectionConstructor !== null) {
+                // モジュールからFaceDetectionを取得
+                let found = FaceDetectionConstructor.FaceDetection ||
+                    FaceDetectionConstructor.default?.FaceDetection ||
+                    FaceDetectionConstructor.default;
+
+                // まだ見つからない場合、Reflect.ownKeysで探索
+                if (!found) {
+                    const keys = Reflect.ownKeys(FaceDetectionConstructor);
+                    console.log('[顔検出] モジュールのキー:', keys);
+
+                    for (const key of keys) {
+                        try {
+                            const value = FaceDetectionConstructor[key];
+                            if (value && typeof value === 'function') {
+                                console.log(`[顔検出] 関数を確認: ${String(key)}, 名前: ${value.name}`);
+                                // 関数名がFaceDetection、またはコンストラクタの可能性がある場合
+                                if (key === 'FaceDetection' ||
+                                    value.name === 'FaceDetection' ||
+                                    value.name === 'Oc' ||
+                                    (value.prototype && 'initialize' in value.prototype)) {
+                                    found = value;
+                                    console.log(`[顔検出] FaceDetectionクラスを発見: ${String(key)}, 名前: ${value.name}`);
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            // スキップ
+                        }
+                    }
+                }
+
+                if (found && typeof found === 'function') {
+                    FaceDetectionConstructor = found;
+                } else {
+                    console.error('[顔検出] モジュール内にFaceDetectionコンストラクタが見つかりません');
+                    throw new Error('FaceDetectionコンストラクタの取得に失敗しました');
+                }
+            }
+
+            if (!FaceDetectionConstructor || typeof FaceDetectionConstructor !== 'function') {
+                console.error('[顔検出] FaceDetectionコンストラクタが見つかりません:', typeof FaceDetectionConstructor);
+                throw new Error('FaceDetectionコンストラクタの取得に失敗しました');
+            }
+
+            // FaceDetectionクラスを取得しました
+
+            this.faceDetection = new FaceDetectionConstructor({
+                locateFile: (file: string) => {
                     // MediaPipeのファイルパスを正しく解決
                     // fileには以下のようなパスが渡される可能性がある:
                     // - "third_party/mediapipe/modules/face_detection/face_detection_short_range.tflite" (内部パス)
@@ -70,8 +146,9 @@ class FaceDetectionService {
                         fileName = file.split('/').pop() || file
                     }
 
-                    // CDNのURLを構築
-                    const cdnUrl = `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${fileName}`
+                    // CDNのURLを構築（unpkgを使用、より信頼性が高い）
+                    // jsdelivrが動作しない場合のフォールバックとしてunpkgを使用
+                    const cdnUrl = `https://unpkg.com/@mediapipe/face_detection@0.4.1646425229/${fileName}`
                     console.log(`[顔検出] locateFile: ${file} -> ${cdnUrl}`)
                     return cdnUrl
                 },
@@ -85,7 +162,15 @@ class FaceDetectionService {
             })
 
             // MediaPipeを初期化（これにより内部でファイルが読み込まれる）
-            await this.faceDetection.initialize()
+            console.log('[顔検出] MediaPipeの初期化を開始します')
+            try {
+                await this.faceDetection.initialize()
+                console.log('[顔検出] MediaPipeの初期化が完了しました')
+            } catch (initError) {
+                console.error('[顔検出] MediaPipeの初期化エラー:', initError)
+                const errorMessage = initError instanceof Error ? initError.message : String(initError)
+                throw new Error(`MediaPipeの初期化に失敗しました: ${errorMessage}`)
+            }
 
             // 初期化後、MediaPipeの内部パスを上書きする
             // MediaPipeは内部で "third_party/mediapipe/modules/face_detection/..." というパスを使うため、
@@ -97,7 +182,10 @@ class FaceDetectionService {
 
             for (const modelFile of modelFiles) {
                 try {
-                    const response = await fetch(`https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${modelFile}`)
+                    // unpkgを使用（より信頼性が高い）
+                    const modelUrl = `https://unpkg.com/@mediapipe/face_detection@0.4.1646425229/${modelFile}`
+                    console.log(`[顔検出] モデルファイルを読み込み中: ${modelUrl}`)
+                    const response = await fetch(modelUrl)
                     if (response.ok) {
                         const arrayBuffer = await response.arrayBuffer()
                         const internalPath = `third_party/mediapipe/modules/face_detection/${modelFile}`
@@ -110,6 +198,8 @@ class FaceDetectionService {
                         } else {
                             console.warn(`[顔検出] overrideFileが利用できません`)
                         }
+                    } else {
+                        console.warn(`[顔検出] モデルファイルの読み込みに失敗: ${modelFile} (ステータス: ${response.status})`)
                     }
                 } catch (error) {
                     console.warn(`[顔検出] モデルファイルの事前読み込みに失敗: ${modelFile}`, error)
@@ -117,8 +207,11 @@ class FaceDetectionService {
             }
 
             this.isInitialized = true
+            console.log('[顔検出] 初期化が完了しました')
         } catch (error) {
-            throw new Error('顔検出モデルの読み込みに失敗しました')
+            console.error('[顔検出] 初期化エラーの詳細:', error)
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            throw new Error(`顔検出モデルの読み込みに失敗しました: ${errorMessage}`)
         }
     }
 
@@ -239,7 +332,7 @@ class FaceDetectionService {
             }, TIMEOUT_MS)
 
             // onResultsコールバックを設定
-            this.faceDetection!.onResults((results) => {
+            this.faceDetection!.onResults((results: any) => {
                 const callbackTime = performance.now() - startTime
                 const prefix = logPrefix ? `${logPrefix} ` : ''
                 console.log(`[顔検出] ${prefix}onResultsコールバック呼び出し - ${callbackTime.toFixed(2)}ms 経過`)
