@@ -12,7 +12,8 @@
     "test:face-detection": "playwright test tests/faceDetection/e2e",
     "test:face-detection:ui": "playwright test tests/faceDetection/e2e --ui",
     "test:face-detection:compare": "bun run tests/faceDetection/scripts/compare-results.ts",
-    "test:face-detection:report": "bun run tests/faceDetection/scripts/generate-report.ts"
+    "test:face-detection:report": "bun run tests/faceDetection/scripts/generate-report.ts",
+    "generate:stamps": "bun run scripts/generate-stamps-playwright.ts"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",

@@ -4,10 +4,12 @@ import FaceDetectionControls from './components/FaceDetectionControls'
 import ProcessingOptions from './components/ProcessingOptions'
 import LassoSelector from './components/LassoSelector'
 import DownloadButton from './components/DownloadButton'
+import StampSelector, { type StampType } from './components/StampSelector'
 import { useCanvas } from './hooks/useCanvas'
 import { useFaceDetection } from './hooks/useFaceDetection'
 import { loadImageFromFile, validateImageFile } from './services/fileHandler'
 import { faceDetectionService } from './services/faceDetection'
+import { imageProcessorService } from './services/imageProcessor'
 import type {
   DetectionMode,
   FaceDetectionResult,
@@ -40,11 +42,13 @@ const App: FC = () => {
   const [detectionMode, setDetectionMode] = useState<DetectionMode>('auto')
   const [manualMode, setManualMode] = useState<ManualModeType>('include')
   const [processingType, setProcessingType] = useState<ProcessingType>('mosaic')
-  const [intensity, setIntensity] = useState(5)
+  const [selectedStamp, setSelectedStamp] = useState<StampType>('emoji1')
   const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>('idle')
+  const [processedCanvas, setProcessedCanvas] = useState<HTMLCanvasElement | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [imageInfo, setImageInfo] = useState<{ width: number; height: number } | null>(null)
   const [currentImage, setCurrentImage] = useState<HTMLImageElement | null>(null)
+  const [stampError, setStampError] = useState<string | null>(null)
   const { canvasRef, drawImage, clear, drawFaceHighlights, redrawImage } = useCanvas()
   const { faces, isDetecting, error: faceDetectionError, detectFaces, setFaces, clearFaces } = useFaceDetection()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -162,6 +166,61 @@ const App: FC = () => {
       drawImage(currentImage)
     }
   }, [faces, currentImage, canvasStatus, drawFaceHighlights, drawImage])
+
+  // 加工処理を実行
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !currentImage || faces.length === 0 || canvasStatus !== 'ready') {
+      setProcessedCanvas(null)
+      return
+    }
+
+    // 元の画像を再描画
+    redrawImage()
+
+    // 加工処理を適用
+    const applyProcessing = () => {
+      // 処理済みCanvasを保存（ダウンロード用）
+      const processed = document.createElement('canvas')
+      processed.width = canvas.width
+      processed.height = canvas.height
+      const processedCtx = processed.getContext('2d')
+      if (processedCtx) {
+        processedCtx.drawImage(canvas, 0, 0)
+        setProcessedCanvas(processed)
+      }
+    }
+
+    try {
+      if (processingType === 'mosaic') {
+        imageProcessorService.applyMosaic(canvas, faces, currentImage)
+        applyProcessing()
+      } else if (processingType === 'blur') {
+        imageProcessorService.applyBlur(canvas, faces, currentImage)
+        applyProcessing()
+      } else if (processingType === 'stamp') {
+        // 選択されたスタンプ画像を読み込む
+        const stampPath = `/assets/stamps/${selectedStamp}.png`
+        setStampError(null) // エラーをリセット
+        imageProcessorService
+          .loadStampImage(stampPath)
+          .then((stampImage) => {
+            imageProcessorService.applyStamp(canvas, faces, stampImage, currentImage)
+            applyProcessing()
+            setStampError(null) // 成功時はエラーをクリア
+          })
+          .catch((error) => {
+            console.error('スタンプ画像の読み込みエラー:', error)
+            setStampError('スタンプ画像の読み込みに失敗しました。ページを再読み込みしてください。')
+          })
+      } else {
+        // 他の処理タイプの場合はエラーをクリア
+        setStampError(null)
+      }
+    } catch (error) {
+      console.error('加工処理エラー:', error)
+    }
+  }, [faces, processingType, selectedStamp, currentImage, canvasStatus, canvasRef, redrawImage])
 
   // 検出エラーを表示
   useEffect(() => {
@@ -410,18 +469,27 @@ const App: FC = () => {
             <ProcessingOptions
               options={processingOptions}
               selected={processingType}
-              intensity={intensity}
               onProcessingChange={setProcessingType}
-              onIntensityChange={setIntensity}
             />
+            {processingType === 'stamp' && (
+              <div className="mt-6 border-t border-white/10 pt-6">
+                <StampSelector selected={selectedStamp} onStampChange={setSelectedStamp} />
+              </div>
+            )}
           </article>
         </section>
 
         <section className="glass-panel flex flex-col items-center gap-4 p-6 text-center">
-          <p className="text-sm text-white/70">
-            STEP6で加工結果をエクスポートできるようになります。それまではUIのみでの操作確認となります。
-          </p>
-          <DownloadButton disabled />
+          {stampError ? (
+            <p className="text-sm text-red-300">{stampError}</p>
+          ) : (
+            <p className="text-sm text-white/70">
+              {processedCanvas
+                ? '加工が完了しました。ダウンロードボタンから保存できます。'
+                : '顔を検出して加工種類を選択すると、加工結果が表示されます。'}
+            </p>
+          )}
+          <DownloadButton disabled={!processedCanvas} />
         </section>
       </main>
     </div>

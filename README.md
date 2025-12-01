@@ -40,6 +40,21 @@ bun run preview
 
 **注意**: このプロジェクトはBunをパッケージマネージャーとして使用しています。npm互換のため`npm run`でも動作しますが、Bunの使用を推奨します。
 
+## デプロイ
+
+本アプリケーションはCloudflare Pagesにデプロイされます。
+
+### クイックスタート
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/)でプロジェクトを作成
+2. GitHubリポジトリを接続
+3. ビルド設定：
+   - **ビルドコマンド**: `bun run build`
+   - **ビルド出力ディレクトリ**: `dist`
+4. デプロイ完了
+
+詳細な手順は[デプロイメントガイド](./docs/05_deployment.md)を参照してください。
+
 ## ドキュメント
 
 - [要件定義書](./docs/00_requirements.md)
@@ -47,6 +62,7 @@ bun run preview
 - [API仕様書](./docs/02_api-specification.md)
 - [ユーザーガイド](./docs/03_user-guide.md)
 - [実装計画](./docs/04_implementation-plan.md)
+- [デプロイメントガイド](./docs/05_deployment.md)
 
 ## ライセンス
 

@@ -25,14 +25,15 @@
 - 動作確認: 顔がハイライトされる、検出エラー時にトースト通知
 
 ## STEP 4: 手動モード（投げ縄選択）
-- [ ] `LassoSelector`で自由形状選択→`detectFacesInRegion`に渡す
-- [ ] include/excludeモード切り替えと1セット処理（選択→検出→加工）を実装
+- [x] `LassoSelector`で自由形状選択→`detectFacesInRegion`に渡す
+- [x] include/excludeモード切り替えと1セット処理（選択→検出→加工）を実装
 - 動作確認: 指定範囲の顔のみ処理される
 
 ## STEP 5: 画像加工（モザイク/ぼかし/スタンプ）
-- [ ] `ImageProcessorService`で各処理（グリッド計算式、ブラー半径、スタンプ5種）を実装
-- [ ] `ProcessingOptions`で加工種別・高度設定スライダーを制御
-- 動作確認: 各加工が適用でき、強度変更が反映される
+- [x] `ImageProcessorService`で各処理（グリッド計算式、ブラー半径、スタンプ）を実装
+- [x] `ProcessingOptions`で加工種別を制御
+- [x] `App.tsx`で加工処理を実行できるようにする
+- 動作確認: 各加工が適用でき、Canvas上に結果が表示される
 
 ## STEP 6: ダウンロード機能
 - [ ] `DownloadButton`でCanvas→Blob生成し元形式でダウンロード
