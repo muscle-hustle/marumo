@@ -30,17 +30,17 @@ const StampSelector: FC<StampSelectorProps> = ({ selected, onStampChange }) => {
           <button
             key={option.value}
             type="button"
-            className={`flex flex-col items-center justify-center rounded-xl border p-3 transition ${
-              selected === option.value
+            className={`flex flex-col items-center justify-center rounded-xl border p-3 transition focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark ${selected === option.value
                 ? 'border-primary-400 bg-primary-400/20 text-white'
                 : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10'
-            }`}
+              }`}
             aria-pressed={selected === option.value}
             onClick={() => onStampChange(option.value)}
             title={option.label}
+            aria-label={`${option.label}スタンプを選択`}
           >
             <span className="text-3xl">{option.emoji}</span>
-            <span className="mt-1 text-xs">{option.label}</span>
+            <span className="mt-1 hidden text-xs sm:block">{option.label}</span>
           </button>
         ))}
       </div>

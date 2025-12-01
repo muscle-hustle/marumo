@@ -19,3 +19,12 @@ body {
   @apply rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl;
 }
 
+/* アクセシビリティ: フォーカススタイル */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-primary-400;
+}
+
+/* ボタンのフォーカススタイル */
+button:focus-visible {
+  @apply ring-2 ring-primary-400 ring-offset-2 ring-offset-surface-dark;
+}

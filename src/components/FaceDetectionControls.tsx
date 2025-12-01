@@ -38,9 +38,9 @@ const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
             <button
               key={button.value}
               type="button"
-              className={`rounded-full px-4 py-2 text-sm transition ${detectionMode === button.value
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10'
+              className={`rounded-full px-4 py-2 text-sm transition focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark ${detectionMode === button.value
+                ? 'bg-primary-500 text-white'
+                : 'bg-white/5 text-white/70 hover:bg-white/10'
                 }`}
               aria-pressed={detectionMode === button.value}
               onClick={() => onDetectionModeChange(button.value)}
@@ -59,9 +59,9 @@ const FaceDetectionControls: FC<FaceDetectionControlsProps> = ({
               <button
                 key={button.value}
                 type="button"
-                className={`rounded-full px-4 py-2 text-sm transition ${manualMode === button.value
-                    ? 'bg-primary-300/20 text-white'
-                    : 'bg-white/5 text-white/70 hover:bg-white/10'
+                className={`rounded-full px-4 py-2 text-sm transition focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark ${manualMode === button.value
+                  ? 'bg-primary-300/20 text-white'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10'
                   }`}
                 aria-pressed={manualMode === button.value}
                 onClick={() => onManualModeChange(button.value)}

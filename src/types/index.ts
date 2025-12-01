@@ -28,4 +28,5 @@ export interface ProcessingOption {
   label: string
   value: ProcessingType
   description: string
+  emoji?: string
 }

@@ -1,12 +1,15 @@
 import { useCallback, useState, useEffect, useRef, type FC } from 'react'
 import ImageCanvas, { type CanvasStatus } from './components/ImageCanvas'
-import FaceDetectionControls from './components/FaceDetectionControls'
 import ProcessingOptions from './components/ProcessingOptions'
 import LassoSelector from './components/LassoSelector'
 import DownloadButton from './components/DownloadButton'
 import StampSelector, { type StampType } from './components/StampSelector'
+import ToastContainer from './components/ToastContainer'
+import LoadingSpinner from './components/LoadingSpinner'
+import ManualToolbar from './components/ManualToolbar'
 import { useCanvas } from './hooks/useCanvas'
 import { useFaceDetection } from './hooks/useFaceDetection'
+import { useToast } from './hooks/useToast'
 import { loadImageFromFile, validateImageFile } from './services/fileHandler'
 import { faceDetectionService } from './services/faceDetection'
 import { imageProcessorService } from './services/imageProcessor'
@@ -19,9 +22,9 @@ import type {
 } from './types'
 
 const processingOptions: ProcessingOption[] = [
-  { label: 'モザイク', value: 'mosaic', description: 'ピクセルを粗くして顔の輪郭をぼかします。' },
-  { label: 'ぼかし', value: 'blur', description: 'ガウシアンブラーで柔らかくぼかします。' },
-  { label: 'スタンプ', value: 'stamp', description: '絵文字スタンプで遊び心のあるマスクを適用します。' },
+  { label: 'モザイク', value: 'mosaic', description: 'ピクセルを粗くして顔の輪郭をぼかします。', emoji: '🔲' },
+  { label: 'ぼかし', value: 'blur', description: 'ガウシアンブラーで柔らかくぼかします。', emoji: '🌫️' },
+  { label: 'スタンプ', value: 'stamp', description: '絵文字スタンプで遊び心のあるマスクを適用します。', emoji: '😀' },
 ]
 
 const validationMessage = (error: string | null) => {
@@ -40,7 +43,7 @@ const validationMessage = (error: string | null) => {
 const App: FC = () => {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [originalMimeType, setOriginalMimeType] = useState<string | null>(null)
-  const [detectionMode, setDetectionMode] = useState<DetectionMode>('auto')
+  const [detectionMode, setDetectionMode] = useState<DetectionMode | null>('auto')
   const [manualMode, setManualMode] = useState<ManualModeType>('include')
   const [processingType, setProcessingType] = useState<ProcessingType>('mosaic')
   const [selectedStamp, setSelectedStamp] = useState<StampType>('emoji1')
@@ -52,6 +55,7 @@ const App: FC = () => {
   const [stampError, setStampError] = useState<string | null>(null)
   const { canvasRef, drawImage, clear, drawFaceHighlights, redrawImage } = useCanvas()
   const { faces, isDetecting, error: faceDetectionError, detectFaces, setFaces, clearFaces } = useFaceDetection()
+  const { toasts, showToast, removeToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   // 検出済みの画像を追跡して重複検出を防ぐ
   const detectedImageRef = useRef<HTMLImageElement | null>(null)
@@ -71,9 +75,17 @@ const App: FC = () => {
 
       const validation = validateImageFile(file)
       if (!validation.valid) {
-        setValidationError(validation.error ?? 'INVALID_TYPE')
+        const error = validation.error ?? 'INVALID_TYPE'
+        setValidationError(error)
         setCanvasStatus('idle')
         clear()
+
+        // トースト通知を表示
+        if (error === 'INVALID_TYPE') {
+          showToast('対応していない形式です（PNG / JPEG / WebP が利用できます）', 'error')
+        } else if (error === 'FILE_TOO_LARGE') {
+          showToast('ファイルサイズが大きすぎます（10MB以下にしてください）', 'error')
+        }
         return
       }
 
@@ -98,15 +110,24 @@ const App: FC = () => {
         setCanvasStatus('idle')
         clear()
         setCurrentImage(null)
+        showToast('画像の読み込みに失敗しました。別のファイルをお試しください。', 'error')
       }
     },
     [clear, drawImage, clearFaces],
   )
 
-  // 検出モードが変更されたら検出済みフラグをリセット
+  // 検出モードが変更されたら検出済みフラグと状態をリセット
   useEffect(() => {
-    if (detectionMode === 'auto') {
+    if (detectionMode !== null) {
       detectedImageRef.current = null
+      // モード切り替え時は顔検出結果をクリア
+      if (detectionMode === 'manual') {
+        // 手動モードに切り替えた場合は、既存の顔検出結果をクリア
+        setFaces([])
+        setFacesHistory([])
+        setHistoryIndex(-1)
+        setProcessedCanvas(null)
+      }
     }
   }, [detectionMode])
 
@@ -145,32 +166,85 @@ const App: FC = () => {
     }
   }, [detectionMode, currentImage, canvasStatus, isDetecting, detectFaces])
 
-  // 自動検出の結果を履歴に追加（一度だけ）
+  // 自動モードで顔検出が完了したら自動で加工を適用
   useEffect(() => {
     if (
       detectionMode === 'auto' &&
       faces.length > 0 &&
-      detectedImageRef.current === currentImage &&
-      !isNavigatingHistoryRef.current &&
-      !autoDetectionAddedToHistoryRef.current
+      currentImage &&
+      canvasStatus === 'ready' &&
+      !isDetecting &&
+      detectedImageRef.current === currentImage
     ) {
-      addToHistory(faces)
-      autoDetectionAddedToHistoryRef.current = true // 履歴に追加済みフラグを立てる
-    }
-  }, [faces, detectionMode, currentImage, addToHistory])
+      const canvas = canvasRef.current
+      if (!canvas) return
 
-  // 検出結果をCanvasに描画
-  useEffect(() => {
-    if (faces.length > 0 && currentImage) {
-      drawFaceHighlights(faces)
-    } else if (faces.length === 0 && currentImage && canvasStatus === 'ready') {
-      // 検出結果がない場合は画像のみ再描画
-      drawImage(currentImage)
-    }
-  }, [faces, currentImage, canvasStatus, drawFaceHighlights, drawImage])
+      // 元の画像を再描画
+      redrawImage()
 
-  // 加工処理を実行
+      // 加工処理を適用
+      const applyProcessing = () => {
+        // 処理済みCanvasを保存（ダウンロード用）
+        const processed = document.createElement('canvas')
+        processed.width = canvas.width
+        processed.height = canvas.height
+        const processedCtx = processed.getContext('2d')
+        if (processedCtx) {
+          processedCtx.drawImage(canvas, 0, 0)
+          setProcessedCanvas(processed)
+        }
+      }
+
+      try {
+        if (processingType === 'mosaic') {
+          imageProcessorService.applyMosaic(canvas, faces, currentImage)
+          applyProcessing()
+        } else if (processingType === 'blur') {
+          imageProcessorService.applyBlur(canvas, faces, currentImage)
+          applyProcessing()
+        } else if (processingType === 'stamp') {
+          // 選択されたスタンプ画像を読み込む
+          const stampPath = `/assets/stamps/${selectedStamp}.png`
+          setStampError(null) // エラーをリセット
+          imageProcessorService
+            .loadStampImage(stampPath)
+            .then((stampImage) => {
+              imageProcessorService.applyStamp(canvas, faces, stampImage, currentImage)
+              applyProcessing()
+              setStampError(null) // 成功時はエラーをクリア
+            })
+            .catch((error) => {
+              console.error('スタンプ画像の読み込みエラー:', error)
+              const errorMessage = 'スタンプ画像の読み込みに失敗しました。ページを再読み込みしてください。'
+              setStampError(errorMessage)
+              showToast(errorMessage, 'error')
+            })
+        }
+      } catch (error) {
+        console.error('加工処理エラー:', error)
+      }
+    }
+  }, [detectionMode, faces, processingType, selectedStamp, currentImage, canvasStatus, isDetecting, canvasRef, redrawImage, showToast])
+
+  // 検出結果をCanvasに描画（手動モードのみ、自動モードはモザイクが適用されるため不要）
   useEffect(() => {
+    if (detectionMode === 'manual') {
+      if (faces.length > 0 && currentImage) {
+        drawFaceHighlights(faces)
+      } else if (faces.length === 0 && currentImage && canvasStatus === 'ready') {
+        // 検出結果がない場合は画像のみ再描画
+        drawImage(currentImage)
+      }
+    }
+  }, [detectionMode, faces, currentImage, canvasStatus, drawFaceHighlights, drawImage])
+
+  // 手動モードで加工処理を実行（自動モードは別のuseEffectで処理）
+  useEffect(() => {
+    // 自動モードの場合はこのuseEffectをスキップ（自動でモザイクが適用される）
+    if (detectionMode === 'auto') {
+      return
+    }
+
     const canvas = canvasRef.current
     if (!canvas || !currentImage || faces.length === 0 || canvasStatus !== 'ready') {
       setProcessedCanvas(null)
@@ -213,7 +287,9 @@ const App: FC = () => {
           })
           .catch((error) => {
             console.error('スタンプ画像の読み込みエラー:', error)
-            setStampError('スタンプ画像の読み込みに失敗しました。ページを再読み込みしてください。')
+            const errorMessage = 'スタンプ画像の読み込みに失敗しました。ページを再読み込みしてください。'
+            setStampError(errorMessage)
+            showToast(errorMessage, 'error')
           })
       } else {
         // 他の処理タイプの場合はエラーをクリア
@@ -222,15 +298,15 @@ const App: FC = () => {
     } catch (error) {
       console.error('加工処理エラー:', error)
     }
-  }, [faces, processingType, selectedStamp, currentImage, canvasStatus, canvasRef, redrawImage])
+  }, [detectionMode, faces, processingType, selectedStamp, currentImage, canvasStatus, canvasRef, redrawImage, showToast])
 
   // 検出エラーを表示
   useEffect(() => {
     if (faceDetectionError) {
       console.error('顔検出エラー:', faceDetectionError)
-      // TODO: STEP7でトースト通知に置き換え
+      showToast('顔を検出できませんでした。手動モードをお試しください。', 'warning')
     }
-  }, [faceDetectionError])
+  }, [faceDetectionError, showToast])
 
   return (
     <div className="bg-surface-dark text-white min-h-screen">
@@ -268,112 +344,134 @@ const App: FC = () => {
       </header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:px-12">
+        {/* モード選択（画面上部に常に表示、切り替え可能） */}
         <section>
-          <div className="glass-panel p-6 space-y-4">
-            <h2 className="text-lg font-display font-semibold">1. 画像を選択</h2>
-            <div className="space-y-4">
-              <ImageCanvas
-                status={canvasStatus}
-                caption={
-                  canvasStatus !== 'ready' && selectedFileName
-                    ? `${selectedFileName} を読み込み中`
-                    : undefined
-                }
-                canvasRef={canvasRef}
-                dimensions={imageInfo}
-                onFileSelect={handleFileSelect}
-                errorMessage={validationMessage(validationError)}
-                inputRef={fileInputRef}
-              />
-              {canvasStatus === 'ready' && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:border-primary-300/80 hover:bg-white/10"
-                >
-                  画像を再選択
-                </button>
-              )}
-              <p className="text-xs text-white/60">PNG / JPEG / WebP、10MBまで対応しています。</p>
+          <div className="glass-panel p-4">
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDetectionMode('auto')}
+                className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark ${detectionMode === 'auto'
+                  ? 'border-primary-400 bg-primary-400/10 text-white'
+                  : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20'
+                  }`}
+                aria-pressed={detectionMode === 'auto'}
+              >
+                <span className="text-lg">⚡</span>
+                <span>自動モード</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetectionMode('manual')}
+                className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark ${detectionMode === 'manual'
+                  ? 'border-primary-400 bg-primary-400/10 text-white'
+                  : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20'
+                  }`}
+                aria-pressed={detectionMode === 'manual'}
+              >
+                <span className="text-lg">✏️</span>
+                <span>手動モード</span>
+              </button>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <article className="glass-panel p-6">
-            <h3 className="text-base font-semibold text-primary-100">2. 検出モード</h3>
-            <FaceDetectionControls
-              detectionMode={detectionMode}
-              manualMode={manualMode}
-              isDetecting={isDetecting}
-              faceCount={faces.length}
-              onDetectionModeChange={setDetectionMode}
-              onManualModeChange={setManualMode}
-            />
-            {/* 顔抽出履歴管理ボタン */}
-            {facesHistory.length > 0 && (
-              <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
-                <p className="text-sm font-semibold text-primary-100">履歴</p>
-                <div className="flex gap-2">
+        {/* 画像選択セクション */}
+        {detectionMode !== null && (
+          <section>
+            <div className="glass-panel p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                {canvasStatus === 'ready' && (
                   <button
                     type="button"
-                    onClick={() => {
-                      isNavigatingHistoryRef.current = true
-                      setFacesHistory([])
-                      setHistoryIndex(-1)
-                      setFaces([])
-                      isNavigatingHistoryRef.current = false
-                    }}
-                    className="flex-1 rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-200 transition hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:border-primary-300/80 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-dark"
+                    aria-label="画像を再選択"
                   >
-                    リセット
+                    画像を再選択
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (historyIndex > 0) {
-                        isNavigatingHistoryRef.current = true
-                        const newIndex = historyIndex - 1
-                        setHistoryIndex(newIndex)
-                        setFaces([...facesHistory[newIndex]])
-                        setTimeout(() => {
-                          isNavigatingHistoryRef.current = false
-                        }, 0)
-                      }
-                    }}
-                    disabled={historyIndex <= 0}
-                    className="flex-1 rounded-lg bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    戻す
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (historyIndex < facesHistory.length - 1) {
-                        isNavigatingHistoryRef.current = true
-                        const newIndex = historyIndex + 1
-                        setHistoryIndex(newIndex)
-                        setFaces([...facesHistory[newIndex]])
-                        setTimeout(() => {
-                          isNavigatingHistoryRef.current = false
-                        }, 0)
-                      }
-                    }}
-                    disabled={historyIndex >= facesHistory.length - 1}
-                    className="flex-1 rounded-lg bg-white/5 px-4 py-2 text-sm text-white/70 transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    進む
-                  </button>
-                </div>
-                <p className="text-xs text-white/50">
-                  {historyIndex + 1} / {facesHistory.length} ステップ
-                </p>
+                )}
               </div>
-            )}
-          </article>
+              <div className="space-y-4">
+                <div className="relative">
+                  <ImageCanvas
+                    status={canvasStatus}
+                    caption={
+                      canvasStatus !== 'ready' && selectedFileName
+                        ? `${selectedFileName} を読み込み中`
+                        : undefined
+                    }
+                    canvasRef={canvasRef}
+                    dimensions={imageInfo}
+                    onFileSelect={handleFileSelect}
+                    errorMessage={validationMessage(validationError)}
+                    inputRef={fileInputRef}
+                  />
+                  {/* 手動モードのツールバーをプレビュー画面の近くに配置（デスクトップは画像の上、スマホは画像の下） */}
+                  {detectionMode === 'manual' && canvasStatus === 'ready' && (
+                    <div className="mt-4 sm:absolute sm:bottom-4 sm:left-4 sm:right-4 sm:mt-0 sm:z-10">
+                      <ManualToolbar
+                        manualMode={manualMode}
+                        onManualModeChange={setManualMode}
+                        onReset={() => {
+                          isNavigatingHistoryRef.current = true
+                          setFacesHistory([])
+                          setHistoryIndex(-1)
+                          setFaces([])
+                          isNavigatingHistoryRef.current = false
+                        }}
+                        canUndo={historyIndex > 0}
+                        canRedo={historyIndex < facesHistory.length - 1}
+                        onUndo={() => {
+                          if (historyIndex > 0) {
+                            isNavigatingHistoryRef.current = true
+                            const newIndex = historyIndex - 1
+                            setHistoryIndex(newIndex)
+                            setFaces([...facesHistory[newIndex]])
+                            setTimeout(() => {
+                              isNavigatingHistoryRef.current = false
+                            }, 0)
+                          }
+                        }}
+                        onRedo={() => {
+                          if (historyIndex < facesHistory.length - 1) {
+                            isNavigatingHistoryRef.current = true
+                            const newIndex = historyIndex + 1
+                            setHistoryIndex(newIndex)
+                            setFaces([...facesHistory[newIndex]])
+                            setTimeout(() => {
+                              isNavigatingHistoryRef.current = false
+                            }, 0)
+                          }
+                        }}
+                        onAutoSelect={async () => {
+                          if (!currentImage) {
+                            console.warn('[App] 画像が読み込まれていません')
+                            return
+                          }
+                          try {
+                            const detectedFaces = await faceDetectionService.detectFaces(currentImage)
+                            setFaces(detectedFaces)
+                            addToHistory(detectedFaces)
+                          } catch (error) {
+                            console.error('[App] 自動選択エラー:', error)
+                            showToast('顔の自動検出に失敗しました', 'error')
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-white/60">PNG / JPEG / WebP、10MBまで対応しています。</p>
+              </div>
+            </div>
+          </section>
+        )}
 
+        {/* 手動モードの場合のみLassoSelectorを表示 */}
+        {detectionMode === 'manual' && (
           <LassoSelector
-            isManualMode={detectionMode === 'manual'}
+            isManualMode={true}
             canvasRef={canvasRef}
             faces={faces}
             drawFaceHighlights={drawFaceHighlights}
@@ -466,40 +564,55 @@ const App: FC = () => {
             }}
             redrawImage={redrawImage}
           />
+        )}
 
-          <article className="glass-panel p-6">
-            <h3 className="text-base font-semibold text-primary-100">4. 加工オプション</h3>
-            <ProcessingOptions
-              options={processingOptions}
-              selected={processingType}
-              onProcessingChange={setProcessingType}
-            />
-            {processingType === 'stamp' && (
-              <div className="mt-6 border-t border-white/10 pt-6">
-                <StampSelector selected={selectedStamp} onStampChange={setSelectedStamp} />
-              </div>
-            )}
-          </article>
-        </section>
+        {/* 加工（自動モードと手動モードの両方で表示） */}
+        {detectionMode !== null && (
+          <>
+            <section>
+              <article className="glass-panel p-6">
+                <ProcessingOptions
+                  options={processingOptions}
+                  selected={processingType}
+                  onProcessingChange={setProcessingType}
+                />
+                {processingType === 'stamp' && (
+                  <div className="mt-6 border-t border-white/10 pt-6">
+                    <StampSelector selected={selectedStamp} onStampChange={setSelectedStamp} />
+                  </div>
+                )}
+              </article>
+            </section>
 
-        <section className="glass-panel flex flex-col items-center gap-4 p-6 text-center">
-          {stampError ? (
-            <p className="text-sm text-red-300">{stampError}</p>
-          ) : (
-            <p className="text-sm text-white/70">
-              {processedCanvas
-                ? '加工が完了しました。ダウンロードボタンから保存できます。'
-                : '顔を検出して加工種類を選択すると、加工結果が表示されます。'}
-            </p>
-          )}
-          <DownloadButton 
-            canvas={processedCanvas}
-            originalFileName={selectedFileName}
-            originalMimeType={originalMimeType}
-            disabled={!processedCanvas}
-          />
-        </section>
+            <section className="glass-panel flex flex-col items-center gap-4 p-6 text-center">
+              {stampError ? (
+                <p className="text-sm text-red-300">{stampError}</p>
+              ) : (
+                <p className="text-sm text-white/70">
+                  {processedCanvas
+                    ? '加工が完了しました。ダウンロードボタンから保存できます。'
+                    : '顔を検出して加工種類を選択すると、加工結果が表示されます。'}
+                </p>
+              )}
+              <DownloadButton
+                canvas={processedCanvas}
+                originalFileName={selectedFileName}
+                originalMimeType={originalMimeType}
+                disabled={!processedCanvas}
+              />
+            </section>
+          </>
+        )}
       </main>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      {isDetecting && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 rounded-lg bg-white/10 px-6 py-4 backdrop-blur-md">
+            <LoadingSpinner size="lg" />
+            <p className="text-sm text-white">顔を検出しています...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
