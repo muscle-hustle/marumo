@@ -39,6 +39,7 @@ const validationMessage = (error: string | null) => {
 
 const App: FC = () => {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
+  const [originalMimeType, setOriginalMimeType] = useState<string | null>(null)
   const [detectionMode, setDetectionMode] = useState<DetectionMode>('auto')
   const [manualMode, setManualMode] = useState<ManualModeType>('include')
   const [processingType, setProcessingType] = useState<ProcessingType>('mosaic')
@@ -63,6 +64,7 @@ const App: FC = () => {
   const handleFileSelect = useCallback(
     async (file: File) => {
       setSelectedFileName(file.name)
+      setOriginalMimeType(file.type)
       setValidationError(null)
       setCanvasStatus('loading')
       setImageInfo(null)
@@ -375,6 +377,7 @@ const App: FC = () => {
             canvasRef={canvasRef}
             faces={faces}
             drawFaceHighlights={drawFaceHighlights}
+            processedCanvas={processedCanvas}
             onSelectionComplete={async (path) => {
               if (!currentImage) {
                 console.warn('[App] 画像が読み込まれていません')
@@ -489,7 +492,12 @@ const App: FC = () => {
                 : '顔を検出して加工種類を選択すると、加工結果が表示されます。'}
             </p>
           )}
-          <DownloadButton disabled={!processedCanvas} />
+          <DownloadButton 
+            canvas={processedCanvas}
+            originalFileName={selectedFileName}
+            originalMimeType={originalMimeType}
+            disabled={!processedCanvas}
+          />
         </section>
       </main>
     </div>

@@ -18,16 +18,14 @@ const ProcessingOptions: FC<ProcessingOptionsProps> = ({
         <button
           key={option.value}
           type="button"
-          className={`flex w-full flex-col rounded-2xl border px-4 py-3 text-left transition ${
-            selected === option.value
+          className={`flex w-full items-center justify-center rounded-2xl border px-4 py-3 text-left transition ${selected === option.value
               ? 'border-primary-400 bg-primary-400/10 text-white'
               : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20'
-          }`}
+            }`}
           aria-pressed={selected === option.value}
           onClick={() => onProcessingChange(option.value)}
         >
           <span className="text-sm font-semibold text-white">{option.label}</span>
-          <span className="text-xs text-white/70">{option.description}</span>
         </button>
       ))}
     </div>

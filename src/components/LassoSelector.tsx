@@ -16,9 +16,10 @@ export interface LassoSelectorProps {
   redrawImage: () => void
   faces: FaceDetectionResult[]
   drawFaceHighlights: (faces: FaceDetectionResult[]) => void
+  processedCanvas: HTMLCanvasElement | null
 }
 
-const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSelectionComplete, redrawImage, faces, drawFaceHighlights }) => {
+const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSelectionComplete, redrawImage, faces, drawFaceHighlights, processedCanvas }) => {
   const isDrawingRef = useRef(false)
   const pointsRef = useRef<Array<{ x: number; y: number }>>([])
   const startPointRef = useRef<{ x: number; y: number } | null>(null)
@@ -99,19 +100,25 @@ const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSele
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // 画像を再描画
-    redrawImage()
+    // 加工済み画像がある場合はそれを描画、なければ元の画像を再描画
+    if (processedCanvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(processedCanvas, 0, 0)
+    } else {
+      // 画像を再描画
+      redrawImage()
 
-    // 顔認識結果を再描画
-    if (faces.length > 0) {
-      drawFaceHighlights(faces)
+      // 顔認識結果を再描画
+      if (faces.length > 0) {
+        drawFaceHighlights(faces)
+      }
     }
 
     // パスを描画（始点マーカーと現在位置を含む）
     if (pointsRef.current.length > 0) {
       drawPath(ctx, pointsRef.current, startPointRef.current, currentPointRef.current)
     }
-  }, [canvasRef, drawPath, redrawImage, faces, drawFaceHighlights])
+  }, [canvasRef, drawPath, redrawImage, faces, drawFaceHighlights, processedCanvas])
 
   // 選択を完了する（開始点まで線を繋げてからエフェクトを表示）
   const completeSelection = useCallback(() => {
@@ -131,12 +138,18 @@ const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSele
 
     // 2. 閉じたパスを描画（エフェクト用）
     const drawClosedPath = (alpha: number = 1.0, lineWidth: number = 8) => {
-      // 画像を再描画
-      redrawImage()
+      // 加工済み画像がある場合はそれを描画、なければ元の画像を再描画
+      if (processedCanvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(processedCanvas, 0, 0)
+      } else {
+        // 画像を再描画
+        redrawImage()
 
-      // 顔認識結果を再描画
-      if (faces.length > 0) {
-        drawFaceHighlights(faces)
+        // 顔認識結果を再描画
+        if (faces.length > 0) {
+          drawFaceHighlights(faces)
+        }
       }
 
       // 閉じたパスを描画
@@ -210,14 +223,19 @@ const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSele
         totalDragDistanceRef.current = 0
         animationFrameRef.current = null
 
-        // 描画をクリア
-        redrawImage()
+        // 描画をクリア（加工済み画像がある場合はそれを描画）
+        if (processedCanvas) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+          ctx.drawImage(processedCanvas, 0, 0)
+        } else {
+          redrawImage()
+        }
       }
     }
 
     // アニメーション開始
     animate()
-  }, [onSelectionComplete, redrawImage, faces, drawFaceHighlights, canvasRef])
+  }, [onSelectionComplete, redrawImage, faces, drawFaceHighlights, canvasRef, processedCanvas])
 
   // マウス/タッチ開始
   const handleStart = useCallback(
@@ -353,9 +371,21 @@ const LassoSelector: FC<LassoSelectorProps> = ({ isManualMode, canvasRef, onSele
       startPointRef.current = null
       currentPointRef.current = null
       totalDragDistanceRef.current = 0 // 累積ドラッグ距離をリセット
-      redrawImage()
+
+      // 加工済み画像がある場合はそれを描画、なければ元の画像を再描画
+      if (canvas) {
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          if (processedCanvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.drawImage(processedCanvas, 0, 0)
+          } else {
+            redrawImage()
+          }
+        }
+      }
     },
-    [isManualMode, completeSelection, redrawImage],
+    [isManualMode, completeSelection, redrawImage, processedCanvas, canvasRef],
   )
 
   // イベントリスナーの設定
