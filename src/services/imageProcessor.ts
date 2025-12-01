@@ -8,7 +8,9 @@ class ImageProcessorService {
   // モザイクの強度（固定値、要件により強度選択は不要）
   private readonly MOSAIC_INTENSITY = 5
   // ぼかしの強度（固定値、要件により強度選択は不要）
-  private readonly BLUR_INTENSITY = 5
+  private readonly BLUR_INTENSITY = 2
+  // 顔領域のマージン（顔領域の10%）
+  private readonly FACE_MARGIN_RATIO = 0.10
 
   /**
    * モザイク処理を適用する
@@ -26,10 +28,22 @@ class ImageProcessorService {
 
     faces.forEach((face) => {
       // 元画像座標系からCanvas座標系に変換
-      const x = Math.max(0, Math.floor(face.x * scaleX))
-      const y = Math.max(0, Math.floor(face.y * scaleY))
-      const width = Math.min(canvas.width - x, Math.floor(face.width * scaleX))
-      const height = Math.min(canvas.height - y, Math.floor(face.height * scaleY))
+      const faceX = Math.floor(face.x * scaleX)
+      const faceY = Math.floor(face.y * scaleY)
+      const faceWidth = Math.floor(face.width * scaleX)
+      const faceHeight = Math.floor(face.height * scaleY)
+
+      if (faceWidth <= 0 || faceHeight <= 0) return
+
+      // モザイク範囲を広げるためのマージン
+      const marginX = Math.floor(faceWidth * this.FACE_MARGIN_RATIO)
+      const marginY = Math.floor(faceHeight * this.FACE_MARGIN_RATIO)
+
+      // マージンを考慮した範囲を計算
+      const x = Math.max(0, faceX - marginX)
+      const y = Math.max(0, faceY - marginY)
+      const width = Math.min(canvas.width - x, faceWidth + marginX * 2)
+      const height = Math.min(canvas.height - y, faceHeight + marginY * 2)
 
       if (width <= 0 || height <= 0) return
 
@@ -96,10 +110,22 @@ class ImageProcessorService {
 
     faces.forEach((face) => {
       // 元画像座標系からCanvas座標系に変換
-      const x = Math.max(0, Math.floor(face.x * scaleX))
-      const y = Math.max(0, Math.floor(face.y * scaleY))
-      const width = Math.min(canvas.width - x, Math.floor(face.width * scaleX))
-      const height = Math.min(canvas.height - y, Math.floor(face.height * scaleY))
+      const faceX = Math.floor(face.x * scaleX)
+      const faceY = Math.floor(face.y * scaleY)
+      const faceWidth = Math.floor(face.width * scaleX)
+      const faceHeight = Math.floor(face.height * scaleY)
+
+      if (faceWidth <= 0 || faceHeight <= 0) return
+
+      // ぼかし範囲を広げるためのマージン
+      const marginX = Math.floor(faceWidth * this.FACE_MARGIN_RATIO)
+      const marginY = Math.floor(faceHeight * this.FACE_MARGIN_RATIO)
+
+      // マージンを考慮した範囲を計算
+      const x = Math.max(0, faceX - marginX)
+      const y = Math.max(0, faceY - marginY)
+      const width = Math.min(canvas.width - x, faceWidth + marginX * 2)
+      const height = Math.min(canvas.height - y, faceHeight + marginY * 2)
 
       if (width <= 0 || height <= 0) return
 
@@ -164,10 +190,6 @@ class ImageProcessorService {
       const height = Math.min(canvas.height - y, Math.floor(face.height * scaleY))
 
       if (width <= 0 || height <= 0) return
-
-      // スタンプのアスペクト比を維持してリサイズ
-      const stampAspect = stampImage.width / stampImage.height
-      const faceAspect = width / height
 
       // スタンプを顔領域より大きく表示するためのスケールファクター
       // 顔領域の対角線の長さに合わせて、スタンプが顔領域を完全に覆うようにする
