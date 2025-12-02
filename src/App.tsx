@@ -21,6 +21,11 @@ import type {
   ProcessingType,
 } from './types'
 
+// 強度の範囲定数（5段階）
+const INTENSITY_MIN = 1
+const INTENSITY_MAX = 5
+const INTENSITY_DEFAULT = 3
+
 const processingOptions: ProcessingOption[] = [
   { label: 'モザイク', value: 'mosaic', description: 'ピクセルを粗くして顔の輪郭をぼかします。', emoji: '🔲' },
   { label: 'ぼかし', value: 'blur', description: 'ガウシアンブラーで柔らかくぼかします。', emoji: '🌫️' },
@@ -46,6 +51,7 @@ const App: FC = () => {
   const [detectionMode, setDetectionMode] = useState<DetectionMode | null>('auto')
   const [manualMode, setManualMode] = useState<ManualModeType>('include')
   const [processingType, setProcessingType] = useState<ProcessingType>('blur')
+  const [intensity, setIntensity] = useState<number>(INTENSITY_DEFAULT) // モザイク・ぼかし共通の強度（1-5）
   const [selectedStamp, setSelectedStamp] = useState<StampType>('emoji1')
   const [canvasStatus, setCanvasStatus] = useState<CanvasStatus>('idle')
   const [processedCanvas, setProcessedCanvas] = useState<HTMLCanvasElement | null>(null)
@@ -86,10 +92,10 @@ const App: FC = () => {
 
       try {
         if (processingType === 'mosaic') {
-          imageProcessorService.applyMosaic(canvas, faces, image)
+          imageProcessorService.applyMosaic(canvas, faces, image, intensity)
           saveProcessedCanvas()
         } else if (processingType === 'blur') {
-          imageProcessorService.applyBlur(canvas, faces, image)
+          imageProcessorService.applyBlur(canvas, faces, image, intensity)
           saveProcessedCanvas()
         } else if (processingType === 'stamp') {
           // 選択されたスタンプ画像を読み込む
@@ -114,7 +120,7 @@ const App: FC = () => {
         console.error('加工処理エラー:', error)
       }
     },
-    [processingType, selectedStamp, redrawImage, showToast],
+    [processingType, selectedStamp, intensity, redrawImage, showToast],
   )
 
   const handleFileSelect = useCallback(
@@ -233,7 +239,7 @@ const App: FC = () => {
 
       applyImageProcessing(canvas, faces, currentImage)
     }
-  }, [detectionMode, faces, currentImage, canvasStatus, isDetecting, canvasRef, applyImageProcessing])
+  }, [detectionMode, faces, currentImage, canvasStatus, isDetecting, canvasRef, applyImageProcessing, intensity])
 
   // 検出結果をCanvasに描画（手動モードのみ、自動モードはモザイクが適用されるため不要）
   useEffect(() => {
@@ -261,7 +267,7 @@ const App: FC = () => {
     }
 
     applyImageProcessing(canvas, faces, currentImage)
-  }, [detectionMode, faces, currentImage, canvasStatus, canvasRef, applyImageProcessing])
+  }, [detectionMode, faces, currentImage, canvasStatus, canvasRef, applyImageProcessing, intensity])
 
   // 検出エラーを表示
   useEffect(() => {
@@ -538,6 +544,10 @@ const App: FC = () => {
                   options={processingOptions}
                   selected={processingType}
                   onProcessingChange={setProcessingType}
+                  intensity={intensity}
+                  onIntensityChange={setIntensity}
+                  intensityMin={INTENSITY_MIN}
+                  intensityMax={INTENSITY_MAX}
                 />
                 {processingType === 'stamp' && (
                   <div className="mt-6 border-t border-white/10 pt-6">
@@ -550,13 +560,7 @@ const App: FC = () => {
             <section className="glass-panel flex flex-col items-center gap-4 p-6 text-center">
               {stampError ? (
                 <p className="text-sm text-red-300">{stampError}</p>
-              ) : (
-                <p className="text-sm text-white/70">
-                  {processedCanvas
-                    ? '加工が完了しました。ダウンロードボタンから保存できます。'
-                    : '顔を検出して加工種類を選択すると、加工結果が表示されます。'}
-                </p>
-              )}
+              ) : (<></>)}
               <DownloadButton
                 canvas={processedCanvas}
                 originalFileName={selectedFileName}

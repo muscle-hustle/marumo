@@ -5,10 +5,6 @@ import type { FaceDetectionResult } from '../types'
  * モザイク、ぼかし、スタンプの各処理を提供
  */
 class ImageProcessorService {
-  // モザイクの強度（固定値、要件により強度選択は不要）
-  private readonly MOSAIC_INTENSITY = 5
-  // ぼかしの強度（固定値、要件により強度選択は不要）
-  private readonly BLUR_INTENSITY = 2
   // 顔領域のマージン（顔領域の10%）
   private readonly FACE_MARGIN_RATIO = 0.10
 
@@ -17,8 +13,16 @@ class ImageProcessorService {
    * @param canvas 加工対象のCanvas
    * @param faces モザイクを適用する顔の配列（元画像座標系）
    * @param originalImage 元の画像（座標変換に使用）
+   * @param intensity モザイクの強度（1-5、デフォルト: 3）
+   *   強度が低いほど細かいモザイク（元の顔が見えやすい）
+   *   強度が高いほど粗いモザイク（元の顔が見えにくい）
    */
-  applyMosaic(canvas: HTMLCanvasElement, faces: FaceDetectionResult[], originalImage: HTMLImageElement): void {
+  applyMosaic(
+    canvas: HTMLCanvasElement,
+    faces: FaceDetectionResult[],
+    originalImage: HTMLImageElement,
+    intensity: number = 3
+  ): void {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -50,10 +54,10 @@ class ImageProcessorService {
       // 顔領域の画像データを取得
       const imageData = ctx.getImageData(x, y, width, height)
 
-      // グリッドサイズを計算（強度は固定値5を使用）
-      // グリッドサイズ = 顔領域の最小辺 / (10 + intensity)
+      // グリッドサイズを計算（強度が低いほど細かいモザイク）
+      // 計算式: グリッドサイズ = 顔領域の最小辺 / (15 - intensity * 係数)
       const minSide = Math.min(width, height)
-      const gridSize = Math.max(2, Math.floor(minSide / (10 + this.MOSAIC_INTENSITY)))
+      const gridSize = Math.max(2, Math.floor(minSide / (15 - intensity * 1.5)))
 
       // グリッドに分割してモザイク処理
       for (let gy = 0; gy < height; gy += gridSize) {
@@ -99,8 +103,15 @@ class ImageProcessorService {
    * @param canvas 加工対象のCanvas
    * @param faces ぼかしを適用する顔の配列（元画像座標系）
    * @param originalImage 元の画像（座標変換に使用）
+   * @param intensity ぼかしの強度（1-5、デフォルト: 3）
+   *   強度が高いほど強くぼかす
    */
-  applyBlur(canvas: HTMLCanvasElement, faces: FaceDetectionResult[], originalImage: HTMLImageElement): void {
+  applyBlur(
+    canvas: HTMLCanvasElement,
+    faces: FaceDetectionResult[],
+    originalImage: HTMLImageElement,
+    intensity: number = 3
+  ): void {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -146,9 +157,11 @@ class ImageProcessorService {
       const blurCtx = blurCanvas.getContext('2d')
       if (!blurCtx) return
 
-      // ガウシアンブラーを適用（強度は固定値5を使用）
-      // ブラー半径 = intensity * 2px
-      const blurRadius = this.BLUR_INTENSITY * 2
+      // ガウシアンブラーを適用
+      // 強度1: ブラー半径 = 3.5px
+      // 強度5: ブラー半径 = 9.5px
+      // ブラー半径 = 2 + intensity * 係数
+      const blurRadius = 2 + intensity * 1.5
       blurCtx.filter = `blur(${blurRadius}px)`
 
       // ぼかした画像を描画（filterを適用するために再描画）
