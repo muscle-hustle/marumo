@@ -13,7 +13,7 @@ export interface ImageCanvasProps {
   onFileSelect?: (file: File) => void
   errorMessage?: string | null
   disabled?: boolean
-  inputRef?: React.RefObject<HTMLInputElement>
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
 const statusMessage: Record<CanvasStatus, string> = {

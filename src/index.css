@@ -1,6 +1,21 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f1f5ff;
+  --color-primary-100: #dfe8ff;
+  --color-primary-200: #b9ccff;
+  --color-primary-300: #8aaaa5;
+  --color-primary-400: #5f81f2;
+  --color-primary-500: #3c63e0;
+  --color-primary-600: #2748b3;
+  --color-primary-700: #1b3689;
+  --color-primary-800: #13265f;
+  --color-primary-900: #0c183a;
+  --color-surface-dark: #0b1120;
+
+  --font-family-sans: "Noto Sans JP", system-ui, sans-serif;
+  --font-family-display: "Figtree", system-ui, sans-serif;
+}
 
 :root {
   color-scheme: dark;
