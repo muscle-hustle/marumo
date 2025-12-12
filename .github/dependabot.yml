@@ -15,11 +15,4 @@ updates:
     # セキュリティアップデートを有効化
     allow:
       - dependency-type: "all"
-    # セキュリティアップデートを優先的にグループ化
-    groups:
-      security-updates:
-        patterns:
-          - "*"
-        update-types:
-          - "security"
 
