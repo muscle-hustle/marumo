@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Bun パッケージの更新
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "patch-update"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # セキュリティアップデートを有効化
+    allow:
+      - dependency-type: "all"
+    # セキュリティアップデートを優先的にグループ化
+    groups:
+      security-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "security"
+
