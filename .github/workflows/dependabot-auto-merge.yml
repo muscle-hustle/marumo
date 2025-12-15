@@ -1,97 +1,28 @@
-name: Dependabot Verify and Auto-merge
+name: Dependabot Auto-merge
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - 'package.json'
-      - 'bun.lock'
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  verify:
-    name: Verify Dependencies Update
+  dependabot:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Get Dependabot metadata
+      - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Type check
-        id: typecheck
-        run: bun run typecheck
-        continue-on-error: true
-
-      - name: Lint
-        id: lint
-        run: bun run lint
-        continue-on-error: true
-
-      - name: Build
-        id: build
-        run: bun run build
-        continue-on-error: true
-
-      - name: Check verification results
-        id: check-results
-        run: |
-          if [ "${{ steps.typecheck.outcome }}" != "success" ] || \
-             [ "${{ steps.lint.outcome }}" != "success" ] || \
-             [ "${{ steps.build.outcome }}" != "success" ]; then
-            echo "verification_failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "verification_failed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Comment PR on failure
-        if: steps.check-results.outputs.verification_failed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const failures = [];
-            if ('${{ steps.typecheck.outcome }}' !== 'success') failures.push('型チェック');
-            if ('${{ steps.lint.outcome }}' !== 'success') failures.push('リント');
-            if ('${{ steps.build.outcome }}' !== 'success') failures.push('ビルド');
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ 以下の検証に失敗しました: ${failures.join('、')}\n\n手動で確認してください。`
-            })
-
-      - name: Auto-merge on success
+      
+      - name: Enable auto-merge
         if: |
-          steps.check-results.outputs.verification_failed == 'false' &&
-          (steps.metadata.outputs.update-type == 'security' || 
-           contains(github.event.pull_request.labels.*.name, 'patch-update'))
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              merge_method: 'squash',
-              commit_title: context.payload.pull_request.title,
-              commit_message: context.payload.pull_request.body || context.payload.pull_request.title
-            })
-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'security'
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

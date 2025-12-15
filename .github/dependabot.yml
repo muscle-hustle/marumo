@@ -1,18 +1,25 @@
 version: 2
 updates:
-  # Bun パッケージの更新
+  # ルートパッケージ
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 10
+    # パッチ更新のみ（セキュリティ修正を含む）
+    versioning-strategy: increase-if-necessary
     labels:
       - "dependencies"
       - "patch-update"
     commit-message:
       prefix: "chore"
       include: "scope"
-    # セキュリティアップデートを有効化
-    allow:
-      - dependency-type: "all"
-
+    # パッチ更新のみを許可（セキュリティアップデートは常に許可）
+    ignore:
+      # マイナー・メジャー更新は無視（パッチのみ）
+      # セキュリティアップデートは自動的に処理されるため、ignoreの対象外
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
